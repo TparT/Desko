@@ -1,0 +1,34 @@
+﻿<Window x:Class="Desko.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Desko"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <TextBlock HorizontalAlignment="Left" Margin="17,39,0,0" TextWrapping="Wrap" Text="Port:" VerticalAlignment="Top" Height="38" Width="134" FontSize="24"/>
+        <ComboBox x:Name="Ports" HorizontalAlignment="Left" Margin="17,82,0,0" VerticalAlignment="Top" Width="196" Height="44" SelectionChanged="Ports_SelectionChanged" FontSize="24"/>
+
+        <TextBlock HorizontalAlignment="Left" Margin="17,147,0,0" TextWrapping="Wrap" Text="Profile:" VerticalAlignment="Top" Height="38" Width="134" FontSize="24"/>
+        <ComboBox x:Name="Profile" Text="Select a profile" HorizontalAlignment="Left" Margin="17,189,0,0" VerticalAlignment="Top" Width="196" Height="48" SelectionChanged="Profiles_SelectionChanged" FontSize="24">
+            <ComboBoxItem Content="Static"/>
+            <ComboBoxItem Content="Rainbow"/>
+            <ComboBoxItem Content="Music Sync"/>
+            <ComboBoxItem Content="CS:GO Integration"/>
+            <ComboBoxItem Content="GTA V Integration"/>
+        </ComboBox>
+
+        <xctk:ColorPicker Name="cp" Margin="17,267,587,0" DisplayColorAndName="True" SelectedColorChanged="ColorPicker_SelectedColorChanged" AvailableColorsSortingMode="HueSaturationBrightness" MaxWidth="196" MaxHeight="45" Height="45" VerticalAlignment="Top" />
+        <Rectangle x:Name="CurrentColor" Margin="246,20,32,0" Stroke="Black" Height="154" VerticalAlignment="Top"/>
+
+        <CheckBox x:Name="GameSync" Content="Automatically switch to game integration profiles" Margin="246,200,0,0" Panel.ZIndex="1" FontSize="11" HorizontalAlignment="Left" Width="258" Height="34" VerticalAlignment="Top" Click="GameSync_Click" >
+
+            <CheckBox.LayoutTransform>
+                <ScaleTransform ScaleX="2" ScaleY="2" />
+            </CheckBox.LayoutTransform>
+        </CheckBox>
+
+    </Grid>
+</Window>
