@@ -16,73 +16,58 @@ namespace Desko
     /// </summary>
     public partial class MainWindow : Window
     {
-        SerialPort port;
+        SerialPort _port;
+
         public Color _currentColor;
+        public Color _staticColor;
 
-        string? _profile;
-        string? _previousProfile;
+        ComboboxItem<int>? _profile;
+        ComboboxItem<int>? _previousProfile;
 
-        private ManagementEventWatcher watcher = null;
+        private AudioMeterInformation _volume;
+
+        private CSGOProfile _CSGOProfile;
+
+        private ManagementEventWatcher _startWatcher;
+        private ManagementEventWatcher _stopWatcher;
+
 
         Random rnd = new Random();
 
         public MainWindow()
         {
             InitializeComponent();
+
+            LoadProfiles();
+
             GetSerialDevices();
+            GetVolumeChannels();
 
             //Profile.SelectedIndex = 0; // Set to Rainbow profile.
         }
 
-        private async void OnWindowOpenedOrClosed(object sender, AutomationEventArgs automationEventArgs)
+        private void LoadProfiles()
         {
-            try
-            {
-                var element = sender as AutomationElement;
-
-                if (element != null)
-                {
-                    if (automationEventArgs.EventId == WindowPattern.WindowOpenedEvent)
-                    {
-                        switch (element.Current.Name)
-                        {
-                            case string e when element.Current.Name.StartsWith("Counter-Strike: Global Offensive - Steam"):
-                                {
-                                    Debug.WriteLine("CS:GO DETECTED!!!!!!");
-                                    Dispatcher.Invoke(() => Profile.SelectedIndex = 3);
-
-
-                                }
-                                break;
-                        }
-
-                        Debug.WriteLine("New Window opened: {0} | {1}", element.Current.Name, element.Current.ProcessId);
-                    }
-                    else if (automationEventArgs.EventId == WindowPattern.WindowClosedEvent)
-                    {
-                        Debug.WriteLine($"{element.Current.Name} CLOSED!!!");
-                    }
-
-                    Automation.AddAutomationEventHandler(
-                        eventId: WindowPattern.WindowClosedEvent,
-                        element: element,
-                        scope: TreeScope.Element,
-                        eventHandler: OnWindowOpenedOrClosed);
-
-
-                }
-            }
-            catch (ElementNotAvailableException)
-            {
-            }
+            Profile.Items.Add(new ComboboxItem<int>("Static", 0));
+            Profile.Items.Add(new ComboboxItem<int>("Rainbow", 1));
+            Profile.Items.Add(new ComboboxItem<int>("Volume Sync", 2));
+            Profile.Items.Add(new ComboboxItem<int>("CS:GO Integration", 3));
+            Profile.Items.Add(new ComboboxItem<int>("GTA V Integration", 4));
         }
 
-        private async Task UpdateProfile(string profile)
+        private async Task UpdateProfile(ComboboxItem<int> profile)
         {
-            _previousProfile = _profile;
+            if (_profile is not null)
+                if (_profile!.Value == profile.Value)
+                    return;
+
+            Profile.SelectedIndex = profile.Value;
+            if (_profile is not null)
+                _previousProfile = _profile;
+
             _profile = profile;
 
-            switch (profile)
+            switch (profile.Text)
             {
                 case "Static":
                     await StaticColorEffect();
@@ -90,8 +75,8 @@ namespace Desko
                 case "Rainbow":
                     await RainbowEffect();
                     break;
-                case "Music Sync":
-                    await MusicSyncEffect();
+                case "Volume Sync":
+                    await VolumeSyncEffect();
                     break;
                 case "CS:GO Integration":
                     await CSGOSyncEffect();
@@ -104,16 +89,14 @@ namespace Desko
 
         private async Task CSGOSyncEffect()
         {
-            while (_profile == "CS:GO Integration")
-            {
-                Debug.WriteLine("CS:GO PROFILE IS ACTIVE!!!");
-                await Task.Delay(500);
-            }
+            _CSGOProfile = new CSGOProfile(this);
+            _CSGOProfile.StartCSGOGameStateSyncProfile();
+            Debug.WriteLine("CS:GO PROFILE IS ACTIVE!!!");
         }
 
         private async Task GtaVSyncEffect()
         {
-            while (_profile == "GTA V Integration")
+            while (_profile.Text == "GTA V Integration")
             {
                 Debug.WriteLine("GTA V PROFILE IS ACTIVE!!!");
                 await Task.Delay(500);
@@ -129,45 +112,125 @@ namespace Desko
             }
         }
 
-        private void Ports_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GetVolumeChannels()
         {
-            port = new SerialPort(Ports.SelectedItem.ToString()!, 9600); //Set your board COM
-            port.Open();
+            //VolumeChannel.Visibility = Visibility.Hidden;
+            Dispatcher.Invoke(VolumeChannel.Items.Clear);
+
+            var deviceEnumerator = new MMDeviceEnumerator();
+            MMDevice device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+
+            VolumeChannel.Items.Add(
+                new ComboboxItem<AudioMeterInformation>("~ General ~", device.AudioMeterInformation));
+            for (var i = 0; i < device.AudioSessionManager.Sessions.Count; i++)
+            {
+                AudioSessionControl session = device.AudioSessionManager.Sessions[i];
+                Process process = Process.GetProcessById((int)session.GetProcessID);
+                VolumeChannel.Items.Add(
+                    new ComboboxItem<AudioMeterInformation>(process.ProcessName, session.AudioMeterInformation));
+            }
+        }
+
+        private void SetVolumeChannel(AudioMeterInformation channel)
+            => _volume = channel;
+
+        private async void Ports_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _port = new SerialPort(Ports.SelectedItem.ToString()!, 9600); //Set your board COM
+            _port.Open();
+
+            //await Fade(Color.FromRgb(255, 255, 255), Color.FromRgb(0, 255, 0), TimeSpan.FromSeconds(5));
+            //await Fade(Color.FromRgb(255, 0, 0), Color.FromRgb(0, 0, 255), TimeSpan.FromSeconds(5));
+
+            UpdateProfile(new ComboboxItem<int>("Static", 0));
         }
 
         private async void Profiles_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            string profile = ((ComboBoxItem)Profile.SelectedItem).Content.ToString()!;
-            await UpdateProfile(profile);
+            //if (_profile is not null)
+            //    if (_previousProfile is not null)
+            //        if (_profile.Value == _previousProfile.Value)
+            //            return;
+
+            Debug.WriteLine("ohno");
+
+            await UpdateProfile((ComboboxItem<int>)Profile.SelectedItem);
         }
 
         private void ColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
         {
-            _currentColor = e.NewValue!.Value;
+            try
+            {
+                if (e.NewValue.HasValue)
+                    _staticColor = e.NewValue!.Value;
+            }
+            catch
+            {
+            }
         }
 
-        private void SetColor(byte red, byte green, byte blue)
+
+        public void SetColor(byte red, byte green, byte blue)
         {
-            port.Write(new[] { red, green, blue }, 0, 3);
             _currentColor = Color.FromRgb(red, green, blue);
-            CurrentColor.Fill = new SolidColorBrush(_currentColor);
+
+            Dispatcher.Invoke(() =>
+            {
+                RedSlider.Value = _currentColor.R;
+                GreenSlider.Value = _currentColor.G;
+                BlueSlider.Value = _currentColor.B;
+                CurrentColor.Fill = new SolidColorBrush(_currentColor);
+            });
+
+            _port.Write(new[] { _currentColor.R, _currentColor.G, _currentColor.B }, 0, 3);
         }
 
-        private void SetColor(Color color)
+        private void SetColor(object red, object green, object blue)
+            => SetColor(Convert.ToByte(red), Convert.ToByte(green), Convert.ToByte(blue));
+
+        public void SetColor(Color color)
             => SetColor(color.R, color.G, color.B);
+
+        public async Task Fade(Color startColor, Color endColor, double duration = 2000)
+        {
+            int redDiff = endColor.R - startColor.R;
+            int greenDiff = endColor.G - startColor.G;
+            int blueDiff = endColor.B - startColor.B;
+
+            int delay = 20;
+            int steps = (int)duration / delay;
+
+            int redValue, greenValue, blueValue;
+
+            for (int i = 0; i < steps - 1; ++i)
+            {
+                redValue = startColor.R + (redDiff * i / steps);
+                greenValue = startColor.G + (greenDiff * i / steps);
+                blueValue = startColor.B + (blueDiff * i / steps);
+
+                SetColor(redValue, greenValue, blueValue);
+                await Task.Delay(delay);
+            }
+
+            SetColor(endColor);
+        }
+
+        public async Task Fade(Color startColor, Color endColor, TimeSpan duration)
+            => await Fade(startColor, endColor, duration.TotalMilliseconds);
+
 
         private async Task StaticColorEffect()
         {
-            while (_profile == "Static")
+            while (_profile.Text == "Static")
             {
-                SetColor(_currentColor);
+                SetColor(_staticColor);
                 await Task.Delay(1);
             }
         }
 
         private async Task RainbowEffect()
         {
-            while (_profile == "Rainbow")
+            while (_profile.Text == "Rainbow")
             {
                 Debug.WriteLine("Rainbow!!!");
 
@@ -196,22 +259,28 @@ namespace Desko
             }
         }
 
-        private async Task MusicSyncEffect()
+        private async Task VolumeSyncEffect()
         {
-            MMDeviceEnumerator devEnum = new MMDeviceEnumerator();
-            MMDevice defaultDevice = devEnum.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            VolumeChannel.Visibility = Visibility.Visible;
+            RefreshChannels.Visibility = Visibility.Visible;
 
-            while (_profile == "Music Sync")
+            Dispatcher.Invoke(() => VolumeChannel.SelectedIndex = 0);
+
+            while (_profile.Text == "Volume Sync")
             {
-                double volume = Math.Round((defaultDevice.AudioMeterInformation.MasterPeakValue * 1000) * 1.25);
-                byte outVolume = (byte)(volume > 255 ? rnd.Next(180, 255) : volume);
+                double volume = Math.Round((_volume.MasterPeakValue * 1000) * 1.25);
+                double outVolume = (double)(volume > 255 ? rnd.Next(180, 255) : volume);
+
+                float intensity = (float)outVolume / 255;
 
                 //Debug.WriteLine($"volume: {volume} | outVolume: {outVolume}");
-
-                SetColor(outVolume, outVolume, (byte)0);
+                SetColor(Color.Multiply(_staticColor, intensity));
 
                 await Task.Delay(1);
             }
+
+            VolumeChannel.Visibility = Visibility.Hidden;
+            RefreshChannels.Visibility = Visibility.Hidden;
         }
 
 
@@ -219,20 +288,119 @@ namespace Desko
         {
             if (GameSync.IsChecked!.Value)
             {
-                WqlEventQuery query = new WqlEventQuery("Select * From __InstanceCreationEvent Within 2 Where TargetInstance Isa 'Win32_Process'");
+                WqlEventQuery startQuery =
+                    new WqlEventQuery("__InstanceCreationEvent",
+                        new TimeSpan(0, 0, 1),
+                        "TargetInstance isa \"Win32_Process\"");
 
-                watcher = new ManagementEventWatcher(query);
-                //watcher.EventArrived += new EventArrivedEventHandler(watcher_EventArrived);
+                _startWatcher = new ManagementEventWatcher(startQuery);
+                _startWatcher.EventArrived += new EventArrivedEventHandler(Watcher_WindowOpenedEvent);
 
-                Console.WriteLine("Waiting ...");
 
-                watcher.Start();
+                WqlEventQuery stopQuery = new WqlEventQuery("SELECT * FROM Win32_ProcessStopTrace");
 
+                _stopWatcher = new ManagementEventWatcher(stopQuery);
+                _stopWatcher.EventArrived += new EventArrivedEventHandler(Watcher_WindowClosedEvent);
+
+
+                _startWatcher.Start();
+                _stopWatcher.Start();
             }
             else
             {
-                Automation.RemoveAllEventHandlers();
+                _startWatcher?.Stop();
+                _stopWatcher?.Stop();
             }
         }
+
+        private void Watcher_WindowOpenedEvent(object sender, EventArrivedEventArgs e)
+        {
+            try
+            {
+                string pname = ((ManagementBaseObject)e.NewEvent["TargetInstance"])["Name"].ToString()!;
+                switch (pname)
+                {
+                    case "csgo.exe":
+                    {
+                        Debug.WriteLine("CS:GO *OPENING* DETECTED!!!!!!");
+                        if (_profile.Value != 3)
+                            Dispatcher.Invoke(
+                                () => Profile.SelectedIndex =
+                                    3 /*UpdateProfile(new ComboboxItem<int>("CS:GO Integration", 3))*/);
+                    }
+                        break;
+
+                    default:
+                        Debug.WriteLine($"Detected a new process OPENING: {pname}");
+                        break;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void Watcher_WindowClosedEvent(object sender, EventArrivedEventArgs e)
+        {
+            string pname = (string)e.NewEvent["ProcessName"];
+
+            switch (pname)
+            {
+                case "csgo.exe":
+                {
+                    Debug.WriteLine("CS:GO *CLOSING* DETECTED!!!!!!");
+                    _CSGOProfile.StopCSGOGameStateSyncProfile();
+
+                    Dispatcher.Invoke(() => UpdateProfile(_previousProfile));
+                }
+                    break;
+
+                default:
+                    Debug.WriteLine($"Detected a new process CLOSING: {pname}");
+                    break;
+            }
+        }
+
+
+        private void VolumeChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (VolumeChannel.SelectedItem is not null)
+                    SetVolumeChannel(((ComboboxItem<AudioMeterInformation>)VolumeChannel.SelectedItem).Value);
+                else
+                    return;
+            }
+            catch (NullReferenceException)
+            {
+            }
+        }
+
+
+        private void RefreshChannels_Click(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.Invoke(GetVolumeChannels);
+            VolumeChannel.SelectedIndex = 0;
+        }
+
+        private void RedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            _currentColor.R = (byte)e.NewValue;
+            RedValueLabel.Content = (int)RedSlider.Value;
+        }
+
+        private void GreenSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            _currentColor.G = (byte)e.NewValue;
+            GreenValueLabel.Content = (int)GreenSlider.Value;
+        }
+
+        private void BlueSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            _currentColor.B = (byte)e.NewValue;
+            BlueValueLabel.Content = (int)BlueSlider.Value;
+        }
+
+
     }
 }
