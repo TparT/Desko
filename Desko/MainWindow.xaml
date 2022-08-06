@@ -20,7 +20,8 @@
         <ComboBox x:Name="Profile" Text="Select a profile" Margin="9,130,18,0" VerticalAlignment="Top" Height="48" SelectionChanged="Profiles_SelectionChanged" FontSize="24"/>
 
         <xctk:ColorPicker Name="cp" Margin="9,189,18,0" DisplayColorAndName="True" SelectedColorChanged="ColorPicker_SelectedColorChanged" AvailableColorsSortingMode="HueSaturationBrightness" Height="45" VerticalAlignment="Top" SelectedColor="Lime" FontSize="18" />
-        <Rectangle x:Name="CurrentColor" Margin="9,321,10,10" Stroke="Black" Grid.ColumnSpan="2"/>
+        <ProgressBar x:Name="CurrentColor" Grid.ColumnSpan="2" Margin="9,321,10,10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Black" Orientation="Vertical" Maximum="255"/>
+        <!--<Rectangle x:Name="CurrentColor" Margin="9,321,10,10" Stroke="Black" Grid.ColumnSpan="2"/>-->
 
         <CheckBox x:Name="GameSync" Content="Automatically switch to game integration profiles" Margin="25,26,0,0" Panel.ZIndex="1" FontSize="11" Height="17" VerticalAlignment="Top" Click="GameSync_Click" HorizontalAlignment="Left" Width="258" Grid.Column="1" >
             <CheckBox.LayoutTransform>
@@ -42,10 +43,7 @@
         <Separator Margin="0,300,0,0" VerticalAlignment="Top" Height="20" Grid.ColumnSpan="2"/>
         <Separator Height="20" Margin="0,82,1,0" VerticalAlignment="Top"/>
 
-        <Label Grid.Column="1" Content="Red" Margin="13,173,0,0" VerticalAlignment="Top" Foreground="Red" FontWeight="Bold" FontSize="18" Height="34" HorizontalAlignment="Left" Width="42"/>
-        <Label x:Name="RedValueLabel" Grid.Column="1" Content="R" HorizontalAlignment="Left" Margin="13,194,0,0" VerticalAlignment="Top" Height="32" Width="42" FontStyle="Normal" HorizontalContentAlignment="Center"/>
-
-        <Slider x:Name="BlueSlider" Grid.Column="1" Margin="69,265,24,0" VerticalAlignment="Top" Value="-2" OpacityMask="Red" Foreground="Red" Height="25" Maximum="255" ValueChanged="BlueSlider_ValueChanged" IsEnabled="False">
+        <Slider x:Name="IntensitySlider" Grid.Column="1" Margin="69,120,24,0" VerticalAlignment="Top" OpacityMask="Red" Foreground="Red" Height="25" Maximum="5" AutoToolTipPlacement="TopLeft" SmallChange="0.01" Orientation="Horizontal" Value="1">
             <Slider.LayoutTransform>
                 <TransformGroup>
                     <ScaleTransform ScaleY="1.5"/>
@@ -55,36 +53,22 @@
                 </TransformGroup>
             </Slider.LayoutTransform>
         </Slider>
+
+        <Label Grid.Column="1" Content="Red" Margin="13,173,0,0" VerticalAlignment="Top" Foreground="Red" FontWeight="Bold" FontSize="18" Height="34" HorizontalAlignment="Left" Width="42"/>
+        <Label x:Name="RedValueLabel" Grid.Column="1" Content="R" HorizontalAlignment="Left" Margin="13,194,0,0" VerticalAlignment="Top" Height="32" Width="42" FontStyle="Normal" HorizontalContentAlignment="Center"/>
+        <ProgressBar x:Name="RedBar" Grid.Column="1" HorizontalAlignment="Left" Height="20" Margin="69,187,0,0" VerticalAlignment="Top" Width="484" Maximum="255" Foreground="Red"/>
 
         <Label Grid.Column="1" Content="Green" HorizontalAlignment="Left" Margin="4,214,0,0" VerticalAlignment="Top" Foreground="Green" FontWeight="Bold" FontSize="18" Height="34"/>
         <Label x:Name="GreenValueLabel" Grid.Column="1" Content="G" HorizontalAlignment="Left" Margin="15,235,0,0" VerticalAlignment="Top" Height="32" Width="42" FontStyle="Normal" HorizontalContentAlignment="Center"/>
-
-        <Slider x:Name="GreenSlider" Grid.Column="1" Margin="69,224,24,0" VerticalAlignment="Top" Value="-1" OpacityMask="Green" Foreground="Green" Height="25" Maximum="255" ValueChanged="GreenSlider_ValueChanged" IsEnabled="False">
-            <Slider.LayoutTransform>
-                <TransformGroup>
-                    <ScaleTransform ScaleY="1.5"/>
-                    <SkewTransform/>
-                    <RotateTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Slider.LayoutTransform>
-        </Slider>
+        <ProgressBar x:Name="GreenBar" Grid.Column="1" HorizontalAlignment="Left" Height="20" Margin="69,228,0,0" VerticalAlignment="Top" Width="484" Maximum="255" Foreground="#FF00B900"/>
 
         <Label Grid.Column="1" Content="Blue" HorizontalAlignment="Left" Margin="10,255,0,0" VerticalAlignment="Top" Foreground="Blue" FontWeight="Bold" FontSize="18" Height="34"/>
         <Label x:Name="BlueValueLabel" Grid.Column="1" Content="B" HorizontalAlignment="Left" Margin="15,276,0,0" VerticalAlignment="Top" Height="32" Width="42" FontStyle="Normal" HorizontalContentAlignment="Center"/>
+        <ProgressBar x:Name="BlueBar" Grid.Column="1" HorizontalAlignment="Left" Height="20" Margin="69,269,0,0" VerticalAlignment="Top" Width="484" Maximum="255" Foreground="Blue"/>
 
-        <Slider x:Name="RedSlider" Grid.Column="1" Margin="69,183,24,0" VerticalAlignment="Top" Value="0" OpacityMask="Blue" Foreground="Blue" Height="25" Maximum="255" ValueChanged="RedSlider_ValueChanged" IsEnabled="False">
-            <Slider.LayoutTransform>
-                <TransformGroup>
-                    <ScaleTransform ScaleY="1.5"/>
-                    <SkewTransform/>
-                    <RotateTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Slider.LayoutTransform>
-        </Slider>
-        <Rectangle Height="310" Margin="222,0,576,0" Stroke="#FFA0A0A0" VerticalAlignment="Top" StrokeThickness="1" Grid.ColumnSpan="2" MaxWidth="2" d:IsHidden="True" Visibility="Hidden"/>
 
+
+        <Rectangle Height="310" Margin="222,0,576,0" Stroke="#FFA0A0A0" VerticalAlignment="Top" StrokeThickness="1" Grid.ColumnSpan="2" MaxWidth="2" Visibility="Hidden"/>
         <Line X1="0" X2="0" Y1="0" Y2="325" Stroke="#FFA0A0A0" StrokeThickness="5" Margin="222,0,576,124" RenderTransformOrigin="0.5,0.5" Grid.ColumnSpan="2" d:IsHidden="True" Visibility="Hidden">
             <Line.RenderTransform>
                 <TransformGroup>

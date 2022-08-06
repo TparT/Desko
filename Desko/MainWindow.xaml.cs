@@ -170,26 +170,38 @@ namespace Desko
         }
 
 
-        public void SetColor(byte red, byte green, byte blue)
+        public void SetColor(byte red, byte green, byte blue, double brightness = 255)
         {
             _currentColor = Color.FromRgb(red, green, blue);
 
             Dispatcher.Invoke(() =>
             {
-                RedSlider.Value = _currentColor.R;
-                GreenSlider.Value = _currentColor.G;
-                BlueSlider.Value = _currentColor.B;
-                CurrentColor.Fill = new SolidColorBrush(_currentColor);
+                //RedSlider.Value = _currentColor.R;
+                //GreenSlider.Value = _currentColor.G;
+                //BlueSlider.Value = _currentColor.B;
+                //CurrentColor.Fill = new SolidColorBrush(_currentColor); // Rectangle
+
+                RedBar.Value = _currentColor.R;
+                RedValueLabel.Content = RedBar.Value;
+
+                GreenBar.Value = _currentColor.G;
+                GreenValueLabel.Content = GreenBar.Value;
+
+                BlueBar.Value = _currentColor.B;
+                BlueValueLabel.Content = BlueBar.Value;
+
+                CurrentColor.Foreground = new SolidColorBrush(_currentColor);
+                CurrentColor.Value = brightness;
             });
 
             _port.Write(new[] { _currentColor.R, _currentColor.G, _currentColor.B }, 0, 3);
         }
 
-        private void SetColor(object red, object green, object blue)
-            => SetColor(Convert.ToByte(red), Convert.ToByte(green), Convert.ToByte(blue));
+        private void SetColor(object red, object green, object blue, double brightness = 255)
+            => SetColor(Convert.ToByte(red), Convert.ToByte(green), Convert.ToByte(blue), brightness);
 
-        public void SetColor(Color color)
-            => SetColor(color.R, color.G, color.B);
+        public void SetColor(Color color, double brightness = 255)
+            => SetColor(color.R, color.G, color.B, brightness);
 
         public async Task Fade(Color startColor, Color endColor, double duration = 2000)
         {
@@ -268,13 +280,13 @@ namespace Desko
 
             while (_profile.Text == "Volume Sync")
             {
-                double volume = Math.Round((_volume.MasterPeakValue * 1000) * 1.25);
+                double volume = Math.Round((_volume.MasterPeakValue * 1000) * 1.25) * IntensitySlider.Value;
                 double outVolume = (double)(volume > 255 ? rnd.Next(180, 255) : volume);
 
                 float intensity = (float)outVolume / 255;
 
                 //Debug.WriteLine($"volume: {volume} | outVolume: {outVolume}");
-                SetColor(Color.Multiply(_staticColor, intensity));
+                SetColor(Color.Multiply(_staticColor, intensity), outVolume);
 
                 await Task.Delay(1);
             }
@@ -321,13 +333,13 @@ namespace Desko
                 switch (pname)
                 {
                     case "csgo.exe":
-                    {
-                        Debug.WriteLine("CS:GO *OPENING* DETECTED!!!!!!");
-                        if (_profile.Value != 3)
-                            Dispatcher.Invoke(
-                                () => Profile.SelectedIndex =
-                                    3 /*UpdateProfile(new ComboboxItem<int>("CS:GO Integration", 3))*/);
-                    }
+                        {
+                            Debug.WriteLine("CS:GO *OPENING* DETECTED!!!!!!");
+                            if (_profile.Value != 3)
+                                Dispatcher.Invoke(
+                                    () => Profile.SelectedIndex =
+                                        3 /*UpdateProfile(new ComboboxItem<int>("CS:GO Integration", 3))*/);
+                        }
                         break;
 
                     default:
@@ -347,12 +359,12 @@ namespace Desko
             switch (pname)
             {
                 case "csgo.exe":
-                {
-                    Debug.WriteLine("CS:GO *CLOSING* DETECTED!!!!!!");
-                    _CSGOProfile.StopCSGOGameStateSyncProfile();
+                    {
+                        Debug.WriteLine("CS:GO *CLOSING* DETECTED!!!!!!");
+                        _CSGOProfile.StopCSGOGameStateSyncProfile();
 
-                    Dispatcher.Invoke(() => UpdateProfile(_previousProfile));
-                }
+                        Dispatcher.Invoke(() => UpdateProfile(_previousProfile));
+                    }
                     break;
 
                 default:
@@ -383,23 +395,32 @@ namespace Desko
             VolumeChannel.SelectedIndex = 0;
         }
 
-        private void RedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            _currentColor.R = (byte)e.NewValue;
-            RedValueLabel.Content = (int)RedSlider.Value;
-        }
+        //private void RedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        //{
+        //    _currentColor.R = (byte)e.NewValue;
+        //    RedValueLabel.Content = (int)RedSlider.Value;
+        //}
 
-        private void GreenSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            _currentColor.G = (byte)e.NewValue;
-            GreenValueLabel.Content = (int)GreenSlider.Value;
-        }
+        //private void GreenSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        //{
+        //    try
+        //    {
+        //        _currentColor.G = (byte)e.NewValue;
+        //        GreenValueLabel.Content = (int)GreenSlider.Value;
+        //    }
+        //    catch { }
+        //}
 
-        private void BlueSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            _currentColor.B = (byte)e.NewValue;
-            BlueValueLabel.Content = (int)BlueSlider.Value;
-        }
+        //private void BlueSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        //{
+        //    try
+        //    {
+        //        _currentColor.B = (byte)e.NewValue;
+        //        BlueValueLabel.Content = (int)BlueSlider!.Value!;
+
+        //    }
+        //    catch { }
+        //}
 
 
     }

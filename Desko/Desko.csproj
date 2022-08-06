@@ -5,9 +5,22 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <LangVersion>9</LangVersion>
+    <PackageIcon>WhiteDeskRGB.png</PackageIcon>
+    <ApplicationIcon>Desko.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Desko.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Pictures\WhiteDeskRGB.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BundlerMinifier.Core" Version="3.2.449" />
